@@ -6,31 +6,43 @@ import {
   Text,
   StyleSheet,
   Image,
+  Alert,
 } from "react-native";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Define the type for your stack's param list
-type AuthStackParamList = {
-  SignIn: undefined;
-  SignUp: undefined;
-};
+interface SignInScreenProps {
+  navigation: any;
+}
 
-const SignInScreen = () => {
+const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Explicitly define the type for the navigation prop
-  const navigation =
-    useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const handleSignIn = async () => {
+    try {
+      // Make the API request to log in the user
+      const response = await axios.post("http://192.168.44.21:3000/api/login", {
+        email,
+        password,
+      });
 
-  const handleSignIn = () => {
-    // Handle sign-in logic here
-    console.log("SignIn", { email, password });
+      if (response.status === 200 && response.data.sessionId) {
+        // Assume a successful login and store the session ID
+        await AsyncStorage.setItem("sessionId", response.data.sessionId);
+        Alert.alert("Success", "You have successfully logged in!");
+        navigation.navigate("Account");
+      } else {
+        Alert.alert("Error", "Login failed. Please check your credentials.");
+      }
+    } catch (error: any) {
+      console.error("Error during login:", error.response?.data || error);
+      Alert.alert("Error", "Something went wrong. Please try again later.");
+    }
   };
 
-  const handleSignUpRedirect = () => {
-    navigation.navigate("SignUp"); // Navigate to the SignUp screen
+  const handleRegisterRedirect = () => {
+    navigation.navigate("SignUp");
   };
 
   return (
@@ -60,10 +72,10 @@ const SignInScreen = () => {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.button, styles.signUpButton]}
-        onPress={handleSignUpRedirect} // Navigate to the SignUp screen when pressed
+        style={[styles.button, styles.registerButton]}
+        onPress={handleRegisterRedirect}
       >
-        <Text style={styles.buttonText}>Sign Up</Text>
+        <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
     </View>
   );
@@ -100,14 +112,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     width: "55%",
   },
-  signUpButton: {
-    backgroundColor: "#4AAF51",
-    paddingVertical: 15,
-    paddingHorizontal: 50,
-    borderRadius: 30,
-    alignItems: "center",
-    marginTop: 20,
-    width: "55%",
+  registerButton: {
+    marginTop: 10, // Space between Sign In and Register buttons
+    backgroundColor: "#4AAF51", // Same color as the Sign In button
   },
   buttonText: {
     color: "white",
