@@ -20,7 +20,7 @@ function AccountNavigator() {
   useEffect(() => {
     const checkRegistrationStatus = async () => {
       try {
-        const value = await AsyncStorage.getItem("isRegistered");
+        const value = await AsyncStorage.getItem("sessionId");
         console.log(value);
 
         setIsLoggedIn(value !== null);

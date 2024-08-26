@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   TextInput,
@@ -6,7 +6,9 @@ import {
   Text,
   StyleSheet,
   Image,
+  Alert,
 } from "react-native";
+import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface SignUpScreenProps {
@@ -20,11 +22,27 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
 
   const handleSignUp = async () => {
     try {
-      // Simulate successful sign-up
-      await AsyncStorage.setItem("isRegistered", "true");
-      navigation.navigate("Account");
-    } catch (e) {
-      console.error("Failed to save registration status", e);
+      // Make the API request to register the user
+      const response = await axios.post(
+        "http://192.168.44.21:3000/api/register",
+        {
+          name,
+          email,
+          password,
+        }
+      );
+
+      if (response.status === 200) {
+        // Assume a successful registration
+        await AsyncStorage.setItem("sessionId", response.data.user.sessionId);
+        Alert.alert("Success", "You have successfully registered!");
+        navigation.navigate("Account");
+      } else {
+        Alert.alert("Error", "Registration failed. Please try again.");
+      }
+    } catch (error: any) {
+      console.error("Error during sign-up:", error.data);
+      Alert.alert("Error", "Something went wrong. Please try again later.");
     }
   };
 
