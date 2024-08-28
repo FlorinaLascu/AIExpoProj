@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, StyleSheet, Text, TouchableOpacity, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -21,6 +21,19 @@ const AccountScreen = ({ navigation }: { navigation: any }) => {
       );
     }
   };
+
+  useEffect(() => {
+    const getSessionId = async () => {
+      const sessionId = await AsyncStorage.getItem("sessionId");
+
+      console.log(sessionId);
+      if (!sessionId) {
+        navigation.navigate("SignIn");
+      }
+    };
+
+    getSessionId();
+  }, []);
 
   return (
     <View style={styles.container}>

@@ -1,3 +1,4 @@
+import React from "react";
 import { Dispatch, FC, SetStateAction } from "react";
 import { TextInput, StyleSheet } from "react-native";
 
