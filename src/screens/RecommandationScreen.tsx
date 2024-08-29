@@ -7,13 +7,10 @@ import {
   Image,
   Alert,
   SafeAreaView,
+  ActivityIndicator,
+  FlatList,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { apiUrl } from "../utils";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
-import { CameraComponent } from "../components/Camera";
+import { baseUrl } from "../utils";
 
 interface RecommandationScreenProps {
   navigation: any;
@@ -24,17 +21,50 @@ const RecommandationScreen: FC<RecommandationScreenProps> = ({
   navigation,
   route,
 }) => {
-
-  const [lesionData, setLesionData] = useState<any>(null);
-
+  const [lesionData, setLesionData] = useState<any>("");
+  console.log(lesionData);
 
   useEffect(() => {
-    console.log(route);
+    if (route.params && route.params.lesion) {
+      setLesionData(route.params.lesion);
+    } else {
+      console.warn("Lesion data is not available");
+    }
   }, [route]);
+
+  const renderRecommendation = ({ item }: { item: string }) => (
+    <View style={styles.recommendationItem}>
+      <Text style={styles.recommendationText}>{item}</Text>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text>Recommandation</Text>
+      {!lesionData ? (
+        <Text style={styles.loadingText}>Loading recommendations...</Text>
+      ) : (
+        <View style={styles.content}>
+          {/* Display the image */}
+          {lesionData.image && (
+            <Image
+              source={{ uri: baseUrl + lesionData.image }}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          )}
+
+          {/* Display the lesion name */}
+          <Text style={styles.lesionName}>{lesionData.name}</Text>
+
+          {/* Display the recommendations */}
+          <FlatList
+            data={lesionData.recommendations}
+            renderItem={renderRecommendation}
+            keyExtractor={(item, index) => index.toString()}
+            contentContainerStyle={styles.recommendationList}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -44,58 +74,47 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#f0f0f0",
+    padding: 20,
   },
-  title: {
-    fontSize: 24,
-    marginBottom: 20,
-  },
-  camera: {
-    width: 300,
-    height: 300,
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  cameraButtonContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-  cameraButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: "white",
-    marginBottom: 20,
-  },
-  imagePreview: {
-    width: 300,
-    height: 300,
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: "#4AAF51",
-    paddingVertical: 15,
-    paddingHorizontal: 50,
-    borderRadius: 30,
-    alignItems: "center",
-    marginBottom: 10,
-    width: "70%",
-  },
-  uploadButton: {
-    backgroundColor: "#4AAF51",
-    paddingVertical: 15,
-    paddingHorizontal: 50,
-    borderRadius: 30,
-    alignItems: "center",
-    marginTop: 20,
-    width: "70%",
-  },
-  buttonText: {
-    color: "white",
+  loadingText: {
     fontSize: 18,
+    color: "#888",
+  },
+  content: {
+    alignItems: "center",
+    paddingBottom: 24,
+  },
+  image: {
+    marginTop: 24,
+    width: 200,
+    height: 200,
+    marginBottom: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#4AAF51",
+  },
+  lesionName: {
+    fontSize: 24,
     fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
+  },
+  recommendationList: {
+    width: "100%",
+    marginTop: 10,
+  },
+  recommendationItem: {
+    backgroundColor: "#fff",
+    padding: 15,
+    marginVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  recommendationText: {
+    fontSize: 16,
+    color: "#555",
   },
 });
-
 export default RecommandationScreen;

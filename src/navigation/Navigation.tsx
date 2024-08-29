@@ -72,6 +72,11 @@ function AccountNavigator() {
         component={SignUpScreen}
         options={{ headerShown: true }}
       />
+      <AuthStack.Screen
+        name="Recommandation"
+        component={RecommandationScreen}
+        options={{ headerShown: true }}
+      />
     </AuthStack.Navigator>
   );
 }
