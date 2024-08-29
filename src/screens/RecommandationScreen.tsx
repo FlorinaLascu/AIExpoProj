@@ -15,16 +15,26 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import { CameraComponent } from "../components/Camera";
 
-interface HomeScreenProps {
+interface RecommandationScreenProps {
   navigation: any;
+  route: any;
 }
 
-const HomeScreen: FC<HomeScreenProps> = ({ navigation }) => {
-  
+const RecommandationScreen: FC<RecommandationScreenProps> = ({
+  navigation,
+  route,
+}) => {
+
+  const [lesionData, setLesionData] = useState<any>(null);
+
+
+  useEffect(() => {
+    console.log(route);
+  }, [route]);
 
   return (
     <SafeAreaView style={styles.container}>
-      <CameraComponent navigation={navigation} />
+      <Text>Recommandation</Text>
     </SafeAreaView>
   );
 };
@@ -34,7 +44,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#000",
   },
   title: {
     fontSize: 24,
@@ -89,4 +98,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HomeScreen;
+export default RecommandationScreen;

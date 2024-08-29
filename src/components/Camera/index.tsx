@@ -1,8 +1,17 @@
-import { Camera, CameraType } from "expo-camera/legacy";
+import { AutoFocus, Camera, CameraType } from "expo-camera/legacy";
 import { useState, useRef, useEffect } from "react";
-import { Button, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+
+import {
+  Button,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Image,
+} from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import * as MediaLibrary from "expo-media-library";
 import axios from "axios";
 import { apiUrl } from "../../utils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -12,7 +21,119 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
   const [permission, requestPermission] = Camera.useCameraPermissions();
   const [photo, setPhoto] = useState<any>(null);
   const cameraRef = useRef<Camera | null>(null);
-  const [sessionId, setSessionId] = useState("");
+  const [focusDepth, setFocusDepth] = useState(0);
+  const [imageUri, setImageUri] = useState("");
+  const [base64Image, setBase64Image] = useState("");
+
+  function toggleCameraFacing() {
+    setFacing((current) =>
+      current === CameraType.back ? CameraType.front : CameraType.back
+    );
+  }
+
+  const handleFocus = (event: any) => {
+    console.log(event.nativeEvent);
+    setFocusDepth(event.nativeEvent.locationX / event.nativeEvent.locationY);
+  };
+
+  const takePhoto = async () => {
+    const sessionId = await getSessionId();
+
+    if (sessionId === "") {
+      navigation.navigate("AccountNavigator", { screen: "SignIn" });
+
+      return;
+    }
+
+    if (cameraRef.current) {
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 1,
+          base64: true,
+          skipProcessing: true,
+        });
+        setPhoto(photo);
+
+        const response = await axios.post(
+          `${apiUrl}/upload`,
+          {
+            sessionId: sessionId,
+            file: photo.base64,
+          },
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        console.log(response.data);
+      } catch (error) {
+        console.error("Failed to take photo:", error);
+      }
+    }
+  };
+
+  const redoPhoto = () => {
+    setPhoto(null);
+  };
+
+  const getSessionId = async () => {
+    const sessionId = await AsyncStorage.getItem("sessionId");
+
+    return sessionId ? sessionId : "";
+  };
+
+  const pickImage = async () => {
+    // Request permission to access media library
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      alert("Sorry, we need camera roll permissions to make this work!");
+      return;
+    }
+
+    // Launch image picker
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+      convertImageToBase64(result.assets[0].uri);
+    }
+  };
+
+  const convertImageToBase64 = async (uri: string) => {
+    const sessionId = await getSessionId();
+    try {
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      setBase64Image(base64);
+
+      const response = await axios.post(
+        `${apiUrl}/upload`,
+        {
+          sessionId: sessionId,
+          file: base64,
+        },
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      navigation.push("Recommandation", { lesion: response.data.lesion });
+
+      console.log(response.data);
+    } catch (error) {
+      console.log("Error converting image to Base64:", error);
+    }
+  };
 
   if (!permission) {
     // Camera permissions are still loading.
@@ -31,81 +152,43 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
     );
   }
 
-  function toggleCameraFacing() {
-    setFacing((current) =>
-      current === CameraType.back ? CameraType.front : CameraType.back
-    );
-  }
-
-  const convertUriToBlob = async (uri: string) => {
-    const response = await fetch(uri);
-    console.log(response);
-    const blob = await response.blob();
-    console.log(blob);
-    return blob;
-  };
-
-  const takePhoto = async () => {
-    const sessionId = await getSessionId();
-    console.log(sessionId);
-    if (sessionId === "") {
-      navigation.navigate("AccountNavigator", { screen: "SignIn" });
-
-      return;
-    }
-
-    if (cameraRef.current) {
-      try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 1,
-          base64: true,
-          skipProcessing: true,
-        });
-        setPhoto(photo);
-        // console.log("Photo taken:", photo);
-
-        const blob = await convertUriToBlob(photo.uri);
-        // Create a FormData object to send the photo to the server
-        const formData = new FormData();
-        formData.append("image", blob, "image.jpg");
-        formData.append("sessionId", sessionId);
-
-        const response = await axios.post(`${apiUrl}/upload`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-
-        console.log(response.data);
-      } catch (error) {
-        console.error("Failed to take photo:", error);
-      }
-    }
-  };
-
-  const getSessionId = async () => {
-    const sessionId = await AsyncStorage.getItem("sessionId");
-
-    return sessionId ? sessionId : "";
-  };
-
   return (
     <View style={styles.container}>
-      <Camera style={styles.camera} type={facing} ref={cameraRef}>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-            <MaterialCommunityIcons name="camera-flip" color="#fff" size={45} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.button} onPress={takePhoto}>
-            <MaterialCommunityIcons name="camera" color="#fff" size={45} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-            <MaterialCommunityIcons name="upload" color="#fff" size={45} />
-          </TouchableOpacity>
+      {photo && (
+        <View style={{ flex: 1 }}>
+          <Image source={{ uri: photo?.uri }} style={{ flex: 1 }} />
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.button} onPress={redoPhoto}>
+              <MaterialCommunityIcons name="camera" color="#fff" size={45} />
+            </TouchableOpacity>
+          </View>
         </View>
-      </Camera>
+      )}
+      {!photo && (
+        <View style={{ flex: 1 }}>
+          <Camera style={styles.camera} type={facing} ref={cameraRef} />
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={toggleCameraFacing}
+            >
+              <MaterialCommunityIcons
+                name="camera-flip"
+                color="#fff"
+                size={45}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.button} onPress={takePhoto}>
+              <MaterialCommunityIcons name="camera" color="#fff" size={45} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.button} onPress={pickImage}>
+              <MaterialCommunityIcons name="upload" color="#fff" size={45} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -122,12 +205,17 @@ const styles = StyleSheet.create({
   },
   camera: {
     flex: 1,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: "hidden",
   },
   buttonContainer: {
     flex: 1,
     flexDirection: "row",
     backgroundColor: "transparent",
     margin: 64,
+    position: "absolute",
+    bottom: 0,
   },
   button: {
     flex: 1,
