@@ -10,9 +10,28 @@ import SignInScreen from "../screens/SignInScreen";
 import SignUpScreen from "../screens/SignUpScreen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ActivityIndicator } from "react-native";
+import RecommandationScreen from "../screens/RecommandationScreen";
 
 const AuthStack = createNativeStackNavigator();
+const NativeStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+function HomeNavigator() {
+  return (
+    <NativeStack.Navigator initialRouteName="Home">
+      <NativeStack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ headerShown: false }}
+      />
+      <NativeStack.Screen
+        name="Recommandation"
+        component={RecommandationScreen}
+        options={{ headerShown: true }}
+      />
+    </NativeStack.Navigator>
+  );
+}
 
 function AccountNavigator() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
@@ -53,6 +72,11 @@ function AccountNavigator() {
         component={SignUpScreen}
         options={{ headerShown: true }}
       />
+      <AuthStack.Screen
+        name="Recommandation"
+        component={RecommandationScreen}
+        options={{ headerShown: true }}
+      />
     </AuthStack.Navigator>
   );
 }
@@ -60,14 +84,14 @@ function AccountNavigator() {
 function MyTabs() {
   return (
     <Tab.Navigator
-      initialRouteName="Home"
+      initialRouteName="HomeNavigator"
       screenOptions={{
         tabBarActiveTintColor: "green",
       }}
     >
       <Tab.Screen
-        name="Home"
-        component={HomeScreen}
+        name="HomeNavigator"
+        component={HomeNavigator}
         options={{
           tabBarLabelStyle: { display: "none" },
           tabBarIcon: ({ color, size }) => (

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Image,
   Alert,
+  SafeAreaView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { apiUrl } from "../utils";
@@ -19,85 +20,12 @@ interface HomeScreenProps {
 }
 
 const HomeScreen: FC<HomeScreenProps> = ({ navigation }) => {
-  // const handleChoosePhoto = async () => {
-  //   const result = await ImagePicker.launchImageLibraryAsync({
-  //     mediaTypes: ImagePicker.MediaTypeOptions.Images,
-  //     allowsEditing: true,
-  //     aspect: [4, 3],
-  //     quality: 1,
-  //   });
-
-  //   if (!result.canceled) {
-  //     setPhoto(result.assets[0]);
-  //   }
-  // };
-
-  // const handleTakePhoto = async () => {
-  //   if (cameraRef.current) {
-  //     const photo = await cameraRef.current.takePictureAsync({
-  //       quality: 1,
-  //       base64: true,
-  //       skipProcessing: true,
-  //     });
-  //     setPhoto(photo);
-  //   }
-  // };
-
-  // const handleUpload = async () => {
-  //   if (!photo) {
-  //     Alert.alert("Error", "Please select or take a photo first.");
-  //     return;
-  //   }
-
-  //   const sessionId = await AsyncStorage.getItem("sessionId");
-
-  //   if (!sessionId) {
-  //     Alert.alert("Error", "You must be signed in to upload a photo.");
-  //     return;
-  //   }
-
-  //   const formData = new FormData();
-  //   formData.append("sessionId", sessionId);
-  //   formData.append("file", {
-  //     uri: photo.uri,
-  //     type: 'image/jpeg', // Assuming the selected image is JPEG
-  //     name: photo.uri.split('/').pop(),
-  //   });
-
-  //   try {
-  //     const response = await axios.post(`${apiUrl}/upload`, formData, {
-  //       headers: {
-  //         "Content-Type": "multipart/form-data",
-  //       },
-  //     });
-
-  //     if (response.data.message) {
-  //       // Navigate to LesionResultScreen with the lesion data
-  //       navigation.navigate("LesionResult", {
-  //         lesionData: response.data.lesion,
-  //         recommendations: response.data.recommendations,
-  //       });
-  //     } else {
-  //       Alert.alert("Error", response.data.error || "Upload failed.");
-  //     }
-  //   } catch (error) {
-  //     console.error("Upload error:", error);
-  //     Alert.alert("Error", "Something went wrong. Please try again later.");
-  //   }
-  // };
-
-  // if (hasPermission === null) {
-  //   return <View />;
-  // } else if (hasPermission === false) {
-  //   return <Text>No access to camera</Text>;
-  // }
+  
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Home</Text>
-
+    <SafeAreaView style={styles.container}>
       <CameraComponent navigation={navigation} />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -106,7 +34,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 16,
+    backgroundColor: "#000",
   },
   title: {
     fontSize: 24,
