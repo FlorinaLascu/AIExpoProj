@@ -16,13 +16,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const AccountScreen = ({ navigation }: { navigation: any }) => {
-  const [sessionId, setSessionId] = useState("");
   const [history, setHistory] = useState([]);
 
   const handleLogout = async () => {
     try {
       // Clear session ID from AsyncStorage
       await AsyncStorage.removeItem("sessionId");
+      setHistory([]);
 
       // Optionally, you can display a confirmation alert
       Alert.alert("Logged Out", "You have been logged out successfully!");
@@ -39,7 +39,6 @@ const AccountScreen = ({ navigation }: { navigation: any }) => {
   };
 
   const renderHistory = ({ item }: { item: any }) => {
-    console.log(item);
     return (
       <TouchableOpacity
         style={styles.recommendationItem}
@@ -65,47 +64,32 @@ const AccountScreen = ({ navigation }: { navigation: any }) => {
   };
 
   const getHistory = async () => {
-    const response = await axios.post(`${apiUrl}/history`, { sessionId });
+    const sessionId = await AsyncStorage.getItem("sessionId");
 
-    if (response.data.history) {
-      console.log(response.data.history);
-      setHistory(response.data.history);
+    if (sessionId !== "") {
+      const response = await axios.post(`${apiUrl}/history`, { sessionId });
+
+      if (response.data.history) {
+        setHistory(response.data.history);
+      }
     }
   };
 
-  useEffect(() => {
-    const getSessionId = async () => {
-      const sessionIdLocal = await AsyncStorage.getItem("sessionId");
-
-      if (!sessionIdLocal) {
-        navigation.navigate("SignIn");
-
-        return;
-      }
-
-      setSessionId(sessionIdLocal);
-    };
-
-    getSessionId();
-  }, []);
-
-  useEffect(() => {
-    if (sessionId !== "") {
-      getHistory();
-    }
-  }, [sessionId]);
-
   useFocusEffect(
     useCallback(() => {
-      if (sessionId !== "") {
-        getHistory();
-      }
+      console.log("focus");
+      getHistory();
     }, [])
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.welcomeText}>Welcome to your account!</Text>
+      {history.length === 0 && (
+        <View>
+          <Text>You don't have any history lesions</Text>
+        </View>
+      )}
       {/* Display the lesion name */}
       <FlatList
         data={history}
@@ -157,8 +141,10 @@ const styles = StyleSheet.create({
   recommendationList: {
     width: "100%",
     marginTop: 10,
+    paddingHorizontal: 16,
   },
   recommendationItem: {
+    width: "100%",
     backgroundColor: "#fff",
     padding: 16,
     marginVertical: 5,

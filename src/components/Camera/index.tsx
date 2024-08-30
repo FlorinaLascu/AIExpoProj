@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
   Image,
+  Linking,
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import axios from "axios";
@@ -75,7 +76,7 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
     // Launch image picker
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 1,
     });
 
@@ -85,14 +86,14 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
     }
   };
 
-  const uploadAPI = async () => {
+  const uploadAPI = async (base64: string) => {
     const sessionId = await getSessionId();
 
     const response = await axios.post(
       `${apiUrl}/upload`,
       {
         sessionId: sessionId,
-        file: photo.base64,
+        file: base64,
       },
       {
         headers: {
@@ -102,6 +103,7 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
     );
 
     navigation.push("Recommandation", { lesion: response.data.lesion });
+    setPhoto(null);
   };
 
   const convertImageToBase64 = async (uri: string) => {
@@ -113,68 +115,93 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
 
       setBase64Image(base64);
 
-      await uploadAPI();
+      await uploadAPI(base64);
     } catch (error) {
       console.log("Error converting image to Base64:", error);
     }
   };
 
-  if (!permission) {
-    // Camera permissions are still loading.
-    return <View />;
-  }
-
-  if (!permission.granted) {
-    // Camera permissions are not granted yet.
-    return (
-      <View style={styles.container}>
-        <Text style={styles.message}>
-          We need your permission to show the camera
-        </Text>
-        <Button onPress={requestPermission} title="grant permission" />
-      </View>
-    );
-  }
+  useEffect(() => {
+    if (!permission?.granted) {
+      requestPermission();
+    }
+  }, []);
 
   return (
     <View style={styles.container}>
-      {photo && (
-        <View style={{ flex: 1 }}>
-          <Image source={{ uri: photo?.uri }} style={{ flex: 1 }} />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.button} onPress={redoPhoto}>
-              <MaterialCommunityIcons name="refresh" color="#fff" size={45} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.button} onPress={uploadAPI}>
-              <MaterialCommunityIcons name="send" color="#fff" size={45} />
-            </TouchableOpacity>
-          </View>
+      {!permission?.granted ? (
+        <View
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+        >
+          <TouchableOpacity
+            style={{}}
+            onPress={() => {
+              requestPermission();
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 30 }}>
+              Requst camera permission
+            </Text>
+          </TouchableOpacity>
         </View>
-      )}
-      {!photo && (
-        <View style={{ flex: 1 }}>
-          <Camera style={styles.camera} type={facing} ref={cameraRef} />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={toggleCameraFacing}
-            >
-              <MaterialCommunityIcons
-                name="camera-flip"
-                color="#fff"
-                size={45}
-              />
-            </TouchableOpacity>
+      ) : (
+        <View style={styles.container}>
+          {photo && (
+            <View style={{ flex: 1 }}>
+              <Image source={{ uri: photo?.uri }} style={{ flex: 1 }} />
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.button} onPress={redoPhoto}>
+                  <MaterialCommunityIcons
+                    name="refresh"
+                    color="#fff"
+                    size={45}
+                  />
+                </TouchableOpacity>
 
-            <TouchableOpacity style={styles.button} onPress={takePhoto}>
-              <MaterialCommunityIcons name="camera" color="#fff" size={45} />
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => {
+                    uploadAPI(photo.base64);
+                  }}
+                >
+                  <MaterialCommunityIcons name="send" color="#fff" size={45} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          {!photo && (
+            <View style={{ flex: 1 }}>
+              <Camera style={styles.camera} type={facing} ref={cameraRef} />
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={toggleCameraFacing}
+                >
+                  <MaterialCommunityIcons
+                    name="camera-flip"
+                    color="#fff"
+                    size={45}
+                  />
+                </TouchableOpacity>
 
-            <TouchableOpacity style={styles.button} onPress={pickImage}>
-              <MaterialCommunityIcons name="upload" color="#fff" size={45} />
-            </TouchableOpacity>
-          </View>
+                <TouchableOpacity style={styles.button} onPress={takePhoto}>
+                  <MaterialCommunityIcons
+                    name="camera"
+                    color="#fff"
+                    size={45}
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.button} onPress={pickImage}>
+                  <MaterialCommunityIcons
+                    name="upload"
+                    color="#fff"
+                    size={45}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
       )}
     </View>
