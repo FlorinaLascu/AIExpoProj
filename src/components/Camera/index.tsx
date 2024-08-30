@@ -31,11 +31,6 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
     );
   }
 
-  const handleFocus = (event: any) => {
-    console.log(event.nativeEvent);
-    setFocusDepth(event.nativeEvent.locationX / event.nativeEvent.locationY);
-  };
-
   const takePhoto = async () => {
     const sessionId = await getSessionId();
 
@@ -53,21 +48,6 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
           skipProcessing: true,
         });
         setPhoto(photo);
-
-        const response = await axios.post(
-          `${apiUrl}/upload`,
-          {
-            sessionId: sessionId,
-            file: photo.base64,
-          },
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-
-        console.log(response.data);
       } catch (error) {
         console.error("Failed to take photo:", error);
       }
@@ -105,6 +85,25 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
     }
   };
 
+  const uploadAPI = async () => {
+    const sessionId = await getSessionId();
+
+    const response = await axios.post(
+      `${apiUrl}/upload`,
+      {
+        sessionId: sessionId,
+        file: photo.base64,
+      },
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    navigation.push("Recommandation", { lesion: response.data.lesion });
+  };
+
   const convertImageToBase64 = async (uri: string) => {
     const sessionId = await getSessionId();
     try {
@@ -114,22 +113,7 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
 
       setBase64Image(base64);
 
-      const response = await axios.post(
-        `${apiUrl}/upload`,
-        {
-          sessionId: sessionId,
-          file: base64,
-        },
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      navigation.push("Recommandation", { lesion: response.data.lesion });
-
-      console.log(response.data);
+      await uploadAPI();
     } catch (error) {
       console.log("Error converting image to Base64:", error);
     }
@@ -159,7 +143,11 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
           <Image source={{ uri: photo?.uri }} style={{ flex: 1 }} />
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.button} onPress={redoPhoto}>
-              <MaterialCommunityIcons name="camera" color="#fff" size={45} />
+              <MaterialCommunityIcons name="refresh" color="#fff" size={45} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.button} onPress={uploadAPI}>
+              <MaterialCommunityIcons name="send" color="#fff" size={45} />
             </TouchableOpacity>
           </View>
         </View>
