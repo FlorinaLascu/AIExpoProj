@@ -28,6 +28,8 @@ const SignInScreen: FC<SignInScreenProps> = ({ navigation }) => {
     // Handle sign-in logic here
     console.log("SignIn", { email, password });
 
+    
+
     try {
       const response = await axios.post(`${apiUrl}/login`, {
         email,
