@@ -1,5 +1,5 @@
 import { AutoFocus, Camera, CameraType } from "expo-camera/legacy";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 
@@ -10,11 +10,13 @@ import {
   TouchableOpacity,
   View,
   Image,
+  Linking,
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import axios from "axios";
 import { apiUrl } from "../../utils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 
 export const CameraComponent = ({ navigation }: { navigation: any }) => {
   const [facing, setFacing] = useState(CameraType.back);
@@ -24,17 +26,13 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
   const [focusDepth, setFocusDepth] = useState(0);
   const [imageUri, setImageUri] = useState("");
   const [base64Image, setBase64Image] = useState("");
+  const [cameraKey, setCameraKey] = useState(1);
 
   function toggleCameraFacing() {
     setFacing((current) =>
       current === CameraType.back ? CameraType.front : CameraType.back
     );
   }
-
-  const handleFocus = (event: any) => {
-    console.log(event.nativeEvent);
-    setFocusDepth(event.nativeEvent.locationX / event.nativeEvent.locationY);
-  };
 
   const takePhoto = async () => {
     const sessionId = await getSessionId();
@@ -53,21 +51,6 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
           skipProcessing: true,
         });
         setPhoto(photo);
-
-        const response = await axios.post(
-          `${apiUrl}/upload`,
-          {
-            sessionId: sessionId,
-            file: photo.base64,
-          },
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-
-        console.log(response.data);
       } catch (error) {
         console.error("Failed to take photo:", error);
       }
@@ -95,7 +78,7 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
     // Launch image picker
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 1,
     });
 
@@ -103,6 +86,26 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
       setImageUri(result.assets[0].uri);
       convertImageToBase64(result.assets[0].uri);
     }
+  };
+
+  const uploadAPI = async (base64: string) => {
+    const sessionId = await getSessionId();
+
+    const response = await axios.post(
+      `${apiUrl}/upload`,
+      {
+        sessionId: sessionId,
+        file: base64,
+      },
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    navigation.push("Recommandation", { lesion: response.data.lesion });
+    setPhoto(null);
   };
 
   const convertImageToBase64 = async (uri: string) => {
@@ -114,79 +117,99 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
 
       setBase64Image(base64);
 
-      const response = await axios.post(
-        `${apiUrl}/upload`,
-        {
-          sessionId: sessionId,
-          file: base64,
-        },
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      navigation.push("Recommandation", { lesion: response.data.lesion });
-
-      console.log(response.data);
+      await uploadAPI(base64);
     } catch (error) {
       console.log("Error converting image to Base64:", error);
     }
   };
 
-  if (!permission) {
-    // Camera permissions are still loading.
-    return <View />;
-  }
+  useEffect(() => {
+    if (!permission?.granted) {
+      requestPermission();
+    }
+  }, []);
 
-  if (!permission.granted) {
-    // Camera permissions are not granted yet.
-    return (
-      <View style={styles.container}>
-        <Text style={styles.message}>
-          We need your permission to show the camera
-        </Text>
-        <Button onPress={requestPermission} title="grant permission" />
-      </View>
-    );
-  }
+  useFocusEffect(
+    useCallback(() => {
+      setCameraKey(prev => prev + 1);
+    }, [])
+  );
 
   return (
     <View style={styles.container}>
-      {photo && (
-        <View style={{ flex: 1 }}>
-          <Image source={{ uri: photo?.uri }} style={{ flex: 1 }} />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.button} onPress={redoPhoto}>
-              <MaterialCommunityIcons name="camera" color="#fff" size={45} />
-            </TouchableOpacity>
-          </View>
+      {!permission?.granted ? (
+        <View
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+        >
+          <TouchableOpacity
+            style={{}}
+            onPress={() => {
+              requestPermission();
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 30 }}>
+              Requst camera permission
+            </Text>
+          </TouchableOpacity>
         </View>
-      )}
-      {!photo && (
-        <View style={{ flex: 1 }}>
-          <Camera style={styles.camera} type={facing} ref={cameraRef} />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={toggleCameraFacing}
-            >
-              <MaterialCommunityIcons
-                name="camera-flip"
-                color="#fff"
-                size={45}
-              />
-            </TouchableOpacity>
+      ) : (
+        <View style={styles.container}>
+          {photo && (
+            <View style={{ flex: 1 }}>
+              <Image source={{ uri: photo?.uri }} style={{ flex: 1 }} />
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.button} onPress={redoPhoto}>
+                  <MaterialCommunityIcons
+                    name="refresh"
+                    color="#fff"
+                    size={45}
+                  />
+                </TouchableOpacity>
 
-            <TouchableOpacity style={styles.button} onPress={takePhoto}>
-              <MaterialCommunityIcons name="camera" color="#fff" size={45} />
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => {
+                    uploadAPI(photo.base64);
+                  }}
+                >
+                  <MaterialCommunityIcons name="send" color="#fff" size={45} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          {!photo && (
+            <View style={{ flex: 1 }}>
+              <Camera style={styles.camera} type={facing} ref={cameraRef} key={cameraKey} ratio="16:9"/>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={toggleCameraFacing}
+                >
+                  <MaterialCommunityIcons
+                    name="camera-flip"
+                    color="#fff"
+                    size={45}
+                  />
+                </TouchableOpacity>
 
-            <TouchableOpacity style={styles.button} onPress={pickImage}>
-              <MaterialCommunityIcons name="upload" color="#fff" size={45} />
-            </TouchableOpacity>
-          </View>
+                <TouchableOpacity style={styles.button} onPress={takePhoto}>
+                  <MaterialCommunityIcons
+                    name="camera"
+                    color="#fff"
+                    size={45}
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.button} onPress={pickImage}>
+                  <MaterialCommunityIcons
+                    name="upload"
+                    color="#fff"
+                    size={45}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
       )}
     </View>

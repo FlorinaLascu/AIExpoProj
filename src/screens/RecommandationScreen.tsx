@@ -103,6 +103,7 @@ const styles = StyleSheet.create({
   recommendationList: {
     width: "100%",
     marginTop: 10,
+    paddingHorizontal: 16
   },
   recommendationItem: {
     backgroundColor: "#fff",

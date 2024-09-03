@@ -37,19 +37,22 @@ function AccountNavigator() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
+    if (isLoggedIn) {
+      return;
+    }
+
     const checkRegistrationStatus = async () => {
       try {
         const value = await AsyncStorage.getItem("sessionId");
-        console.log(value);
-
         setIsLoggedIn(value !== null);
       } catch (e) {
         console.error("Failed to fetch registration status", e);
+        setIsLoggedIn(false);
       }
     };
 
     checkRegistrationStatus();
-  }, []);
+  }, [isLoggedIn]);
 
   if (isLoggedIn === null) {
     return <ActivityIndicator size="large" color="#0000ff" />;
