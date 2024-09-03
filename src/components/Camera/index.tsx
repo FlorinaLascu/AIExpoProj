@@ -1,5 +1,5 @@
 import { AutoFocus, Camera, CameraType } from "expo-camera/legacy";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 
@@ -16,6 +16,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import axios from "axios";
 import { apiUrl } from "../../utils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 
 export const CameraComponent = ({ navigation }: { navigation: any }) => {
   const [facing, setFacing] = useState(CameraType.back);
@@ -25,6 +26,7 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
   const [focusDepth, setFocusDepth] = useState(0);
   const [imageUri, setImageUri] = useState("");
   const [base64Image, setBase64Image] = useState("");
+  const [cameraKey, setCameraKey] = useState(1);
 
   function toggleCameraFacing() {
     setFacing((current) =>
@@ -127,6 +129,12 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
     }
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      setCameraKey(prev => prev + 1);
+    }, [])
+  );
+
   return (
     <View style={styles.container}>
       {!permission?.granted ? (
@@ -171,7 +179,7 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
           )}
           {!photo && (
             <View style={{ flex: 1 }}>
-              <Camera style={styles.camera} type={facing} ref={cameraRef} />
+              <Camera style={styles.camera} type={facing} ref={cameraRef} key={cameraKey} ratio="16:9"/>
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
                   style={styles.button}

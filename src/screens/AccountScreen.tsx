@@ -77,7 +77,6 @@ const AccountScreen = ({ navigation }: { navigation: any }) => {
 
   useFocusEffect(
     useCallback(() => {
-      console.log("focus");
       getHistory();
     }, [])
   );
