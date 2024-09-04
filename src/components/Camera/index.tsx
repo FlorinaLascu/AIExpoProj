@@ -11,6 +11,8 @@ import {
   View,
   Image,
   Linking,
+  ActivityIndicator,
+  Platform,
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import axios from "axios";
@@ -27,6 +29,7 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
   const [imageUri, setImageUri] = useState("");
   const [base64Image, setBase64Image] = useState("");
   const [cameraKey, setCameraKey] = useState(1);
+  const [cameraIsReady, setCameraIsReady] = useState(false);
 
   function toggleCameraFacing() {
     setFacing((current) =>
@@ -91,6 +94,12 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
   const uploadAPI = async (base64: string) => {
     const sessionId = await getSessionId();
 
+    if (sessionId === "") {
+      navigation.navigate("AccountNavigator", { screen: "SignIn" });
+      // setCameraKey((prev) => prev + 1);
+
+      return;
+    }
     const response = await axios.post(
       `${apiUrl}/upload`,
       {
@@ -106,6 +115,7 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
 
     navigation.push("Recommandation", { lesion: response.data.lesion });
     setPhoto(null);
+    // setCameraKey((prev) => prev + 1);
   };
 
   const convertImageToBase64 = async (uri: string) => {
@@ -123,6 +133,10 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
     }
   };
 
+  const handleCameraReady = () => {
+    setCameraIsReady(true);
+  };
+
   useEffect(() => {
     if (!permission?.granted) {
       requestPermission();
@@ -131,7 +145,9 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
 
   useFocusEffect(
     useCallback(() => {
-      setCameraKey(prev => prev + 1);
+      if (Platform.OS === "android") {
+        setCameraKey((prev) => prev + 1);
+      }
     }, [])
   );
 
@@ -179,7 +195,16 @@ export const CameraComponent = ({ navigation }: { navigation: any }) => {
           )}
           {!photo && (
             <View style={{ flex: 1 }}>
-              <Camera style={styles.camera} type={facing} ref={cameraRef} key={cameraKey} ratio="16:9"/>
+              {!cameraIsReady && <ActivityIndicator size="large" />}
+              <Camera
+                style={styles.camera}
+                type={facing}
+                ref={cameraRef}
+                key={cameraKey}
+                onCameraReady={handleCameraReady}
+                onMountError={() => setCameraKey((prev) => prev + 1)}
+                ratio="16:9"
+              />
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
                   style={styles.button}
