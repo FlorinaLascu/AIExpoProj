@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "AIExpoProj",
-    "slug": "AIExpoProj",
+    "name": "MyLesion",
+    "slug": "mylesion",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -18,7 +18,11 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,6 +36,18 @@
           "recordAudioAndroid": true
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "eeaafd18-8798-4f2d-8d79-09b7c107855f"
+      }
+    },
+    "owner": "practicaaaa",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/eeaafd18-8798-4f2d-8d79-09b7c107855f"
+    }
   }
 }
